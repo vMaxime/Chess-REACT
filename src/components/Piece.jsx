@@ -1,9 +1,9 @@
-
-function Piece({ type, team, children }) {
+function Piece({ type, team }) {
+    const teamStr = team ? 'white' : 'black';
     return (
-        <div className={'piece ' + type.toLowerCase() + ' ' + team}>
+        <div className={'piece ' + type.toLowerCase() + ' ' + teamStr} >
             {
-                <img src={`/${type.toLowerCase()}_${team}.png`} />
+                <img src={`/${type.toLowerCase()}_${teamStr}.png`} draggable={false} />
             }
         </div>
     );

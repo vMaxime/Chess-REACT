@@ -1,4 +1,6 @@
 :root {
     --cell-black: #B7C0D8;
     --cell-white: #E8EDF9;
+    --active: #7B61FF;
+    --active-light: rgba(123, 97, 255, 0.5);
 }

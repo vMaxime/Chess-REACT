@@ -2,11 +2,18 @@
     display: flex;
     flex-flow: row wrap;
     width: 607px;
+    position: relative;
+}
+
+.board, .cell, .piece, .piece>img {
+    user-select: none;
 }
 
 .cell {
     height: 72px;
     width: 72px;
+    box-sizing: border-box;
+    position: relative;
 }
 
 .cell.black {
@@ -17,9 +24,37 @@
     background-color: var(--cell-white);
 }
 
+.cell.active, .cell.hover {
+    background-color: var(--active-light) !important;
+}
+
+.cell.canEat::before {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 64px;
+    width: 64px;
+    border-radius: 50%;
+    border: 4px solid var(--active-light);
+}
+
+.cell.canMove::before {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 21px;
+    left: 21px;
+    height: 32px;
+    width: 32px;
+    border-radius: 50%;
+    background-color: var(--active-light);
+}
+
 .piece {
-    width: 100%;
-    height: 100%;
+    width: 72px;
+    height: 72px;
     display: flex;
     justify-content: center;
     align-items: center;

@@ -1,44 +1,66 @@
 import Cell from "./Cell";
 import chess from "../chess";
 import Piece from "./Piece";
+import { useEffect, useRef, useState } from "react";
 
 function Board() {
+    
+    const [boards, setBoards] = useState([chess.getDefaultBoard()]);
+    const [currentBoard, setCurrentBoard] = useState(0);
+    const [selectedPiece, setSelectedPiece] = useState(null);
+    const boardElement = useRef();
 
-    let defaultPieces = {
-        // blacks
-        0: chess.PieceType.ROOK,
-        1: chess.PieceType.KNIGHT,
-        2: chess.PieceType.BISHOP,
-        3: chess.PieceType.QUEEN,
-        4: chess.PieceType.KING,
-        5: chess.PieceType.BISHOP,
-        6: chess.PieceType.KNIGHT,
-        7: chess.PieceType.ROOK,
-        // whites
-        56: chess.PieceType.ROOK,
-        57: chess.PieceType.KNIGHT,
-        58: chess.PieceType.BISHOP,
-        59: chess.PieceType.QUEEN,
-        60: chess.PieceType.KING,
-        61: chess.PieceType.BISHOP,
-        62: chess.PieceType.KNIGHT,
-        63: chess.PieceType.ROOK,
-    };
+    const board = boards[currentBoard];
+    const currentTeam = currentBoard % 2 === 0 ? 1 : 0;
+    const enemyTeam = currentTeam === 0 ? 1 : 0;
+    const [selectedPieceType, selectedPieceTeam] = selectedPiece != null ? board[selectedPiece] : [null, null];
 
-    for (let y = 0; y <= 40; y += 40) {
-        for (let x = 8; x < 16; x++) {
-            defaultPieces[x + y] = chess.PieceType.PAWN;
+    let cellsCanMove = [];
+    let cellsCanEat = [];
+
+    if (selectedPieceTeam != null && selectedPieceTeam != enemyTeam) {
+        let useableCells = chess.getUseableCells(board, selectedPiece, currentTeam);
+        if (selectedPieceType === chess.PieceType.KING) {
+            const tempBoard = [...board];
+            tempBoard[selectedPiece] = [null, null]; // avoid diagonal checks blocking
+            // TODO : remove pieces mating king
+            for (const piecePos of Object.keys(chess.getCellsByTeam(board, enemyTeam))) {
+                const tempBoardUseableCells = chess.getUseableCells(tempBoard, parseInt(piecePos), enemyTeam);
+                useableCells = useableCells.filter(cell => !tempBoardUseableCells.includes(cell));
+            }
         }
+        cellsCanMove = useableCells.filter(cell => board[cell][0] === null);
+        cellsCanEat = useableCells.filter(cell => board[cell][1] != null && board[cell][1] != selectedPieceTeam);
     }
 
+    const moveSelectedPiece = to => {
+        let useableCells = chess.getUseableCells(board, selectedPiece, currentTeam);
+        if (!useableCells.includes(to))
+            return false;
+        // TODO checkmate
+        const newBoard = [...board];
+        newBoard[selectedPiece] = [null, null];
+        newBoard[to] = board[selectedPiece];
+        setBoards([...boards, newBoard]);
+        setSelectedPiece(null);
+        setCurrentBoard(currentBoard + 1);
+        return true;
+    }
+
+    // TODO show last move by highlighting the two cells
+
     return (
-        <div className="board">
+        <div className="board" ref={boardElement}>
             {
-                Array(64).fill().map((ignore, index) => {
-                    const pieceType = defaultPieces[index];
-                    return <Cell key={index} index={index}>
-                        {pieceType ? <Piece type={pieceType} team={index < 16 ? 'black' : 'white'} /> : null}
-                    </Cell>
+                board.map(([pieceType, team], index) => {
+                    const piece = pieceType != null ? {type: pieceType, team} : null;
+                    const canEat = cellsCanEat.includes(index);
+                    let canMove = false;
+                    if (!canEat)
+                        canMove = cellsCanMove.includes(index);
+                    return (
+                        <Cell key={index} index={index} piece={piece} canEat={canEat} canMove={canMove} selectedPiece={selectedPiece} setSelectedPiece={setSelectedPiece} moveSelectedPiece={moveSelectedPiece} />
+                    );
                 })
             }
         </div>

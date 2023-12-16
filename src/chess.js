@@ -29,7 +29,7 @@ export default {
             array.push(pos);
     },
 
-    getUseableCells: function (board, piecePosition, currentTeam) {
+    getUseableCells: function (board, piecePosition, currentTeam, friendlyFire=false) {
         const useableCells = [];
         const [pieceType, team] = board[piecePosition];
         if (!pieceType)
@@ -40,9 +40,6 @@ export default {
         const pieceRow = Math.floor(piecePosition / 8);
         const piecePositionInRow = piecePosition % 8;
         const isWhite = team === 1;
-
-        const frontPos = isWhite ? piecePosition - 8 : piecePosition + 8;
-        const [pieceTypeAtFrontPos, pieceTeamAtFrontPos] = this.safeGetPieceAt(board, frontPos);
 
         switch (pieceType) {
             case this.PieceType.KNIGHT:
@@ -56,17 +53,20 @@ export default {
                     const [pieceTypeAtRight1, pieceTeamAtRight1, piecePosAtRight1] = this.safeGetPieceInRowAt(board, row1, piecePositionInRow + 2);
                     const [pieceTypeAtRight2, pieceTeamAtRight2, piecePosAtRight2] = this.safeGetPieceInRowAt(board, row2, piecePositionInRow + 1);
 
-                    if (pieceTypeAtLeft1 === null || pieceTeamAtLeft1 != team)
+                    if (pieceTypeAtLeft1 === null || pieceTeamAtLeft1 != team || (pieceTypeAtLeft1 != null && friendlyFire))
                         this.safeAddPos(board, piecePosAtLeft1, useableCells);
-                    if (pieceTypeAtLeft2 === null || pieceTeamAtLeft2 != team)
+                    if (pieceTypeAtLeft2 === null || pieceTeamAtLeft2 != team || (pieceTypeAtLeft2 != null && friendlyFire))
                         this.safeAddPos(board, piecePosAtLeft2, useableCells);
-                    if (pieceTypeAtRight1 === null || pieceTeamAtRight1 != team)
+                    if (pieceTypeAtRight1 === null || pieceTeamAtRight1 != team || (pieceTypeAtRight1 != null && friendlyFire))
                         this.safeAddPos(board, piecePosAtRight1, useableCells);
-                    if (pieceTypeAtRight2 === null || pieceTeamAtRight2 != team)
+                    if (pieceTypeAtRight2 === null || pieceTeamAtRight2 != team || (pieceTypeAtRight2 != null && friendlyFire))
                         this.safeAddPos(board, piecePosAtRight2, useableCells);
                 }
                 break;
             case this.PieceType.PAWN:
+                const frontPos = isWhite ? piecePosition - 8 : piecePosition + 8;
+                const [pieceTypeAtFrontPos, pieceTeamAtFrontPos] = this.safeGetPieceAt(board, frontPos);
+                
                 if (pieceTypeAtFrontPos === null)
                     this.safeAddPos(board, frontPos, useableCells, useableCells);
 
@@ -76,9 +76,9 @@ export default {
                 const [pieceTypeAtTopLeftPos, pieceTeamAtTopLeftPos] = this.safeGetPieceAt(board, topLeftPos);
                 const [pieceTypeAtTopRightPos, pieceTeamAtTopRightPos] = this.safeGetPieceAt(board, topRightPos);
 
-                if (pieceTypeAtTopLeftPos != null && pieceTeamAtTopLeftPos != team)
+                if (pieceTypeAtTopLeftPos != null && (pieceTeamAtTopLeftPos != team || friendlyFire))
                     this.safeAddPos(board, topLeftPos, useableCells);
-                if (pieceTypeAtTopRightPos != null && pieceTeamAtTopRightPos != team)
+                if (pieceTypeAtTopRightPos != null && (pieceTeamAtTopRightPos != team || friendlyFire))
                     this.safeAddPos(board, topRightPos, useableCells);
                 break;
             case this.PieceType.ROOK:
@@ -86,7 +86,7 @@ export default {
             case this.PieceType.KING:
             case this.PieceType.BISHOP:
                 if (pieceType === this.PieceType.KING || pieceType === this.PieceType.QUEEN)
-                    for (const cell of this.getUseableCellsAround(board, piecePosition, team))
+                    for (const cell of this.getUseableCellsAround(board, piecePosition, team, friendlyFire))
                         useableCells.push(cell);
                 if (pieceType === this.PieceType.ROOK || pieceType === this.PieceType.QUEEN) {
                     // Add cell to useable cells array if it's avalaible and returns true if a piece is on the cell
@@ -97,7 +97,7 @@ export default {
                         if (pieceType2 === null)
                             safeAddPos(board, piecePos2, useableCells);
                         else {
-                            if (pieceTeam2 != team)
+                            if (pieceTeam2 != team || friendlyFire)
                                 safeAddPos(board, piecePos2, useableCells);
                             return true;
                         }
@@ -125,7 +125,7 @@ export default {
                     }
                 }
                 if (pieceType === this.PieceType.QUEEN || pieceType === this.PieceType.BISHOP)
-                    for (const cell of this.getUseableDiagonalCells(board, pieceRow, piecePositionInRow, team))
+                    for (const cell of this.getUseableDiagonalCells(board, pieceRow, piecePositionInRow, team, friendlyFire))
                         useableCells.push(cell);
                 break;
             default:
@@ -146,48 +146,42 @@ export default {
     }, 
 
     getKingPosition: function (board, team) {
-        return board.find(([type, currentTeam]) => type === this.PieceType.KING && currentTeam === team);
+        return board.findIndex(([type, currentTeam]) => type === this.PieceType.KING && currentTeam === team);
     },
 
     isKingAttacked: function (board, team) {
         const kingPos = this.getKingPosition(board, team);
     },
 
-    getUseableDiagonalCells: function(board, pieceRow, piecePositionInRow, team) {
+    getUseableDiagonalCells: function(board, pieceRow, piecePositionInRow, team, friendlyFire) {
         const useableCells = [];
         let someting1OnDiagonal = false;
         let someting2OnDiagonal = false;
         let space = 1;
-        for (let row = pieceRow - 1; row >= 0; row--) {
-            const [pieceType1OnDiagonal, pieceTeam1OnDiagonal, piecePos1OnDiagonal] = this.safeGetPieceInRowAt(board, row, piecePositionInRow - space);
-            const [pieceType2OnDiagonal, pieceTeam2OnDiagonal, piecePos2OnDiagonal] = this.safeGetPieceInRowAt(board, row, piecePositionInRow + (space++));
+        const safeGetPieceInRowAt = this.safeGetPieceInRowAt;
+        const safeAddPos = this.safeAddPos;
+        const check = row => {
+            const [pieceType1OnDiagonal, pieceTeam1OnDiagonal, piecePos1OnDiagonal] = safeGetPieceInRowAt(board, row, piecePositionInRow - space);
+            const [pieceType2OnDiagonal, pieceTeam2OnDiagonal, piecePos2OnDiagonal] = safeGetPieceInRowAt(board, row, piecePositionInRow + (space++));
             
-            if (!someting1OnDiagonal && (pieceType1OnDiagonal === null || pieceTeam1OnDiagonal != team))
-                this.safeAddPos(board, piecePos1OnDiagonal, useableCells)
-            if (!someting2OnDiagonal && (pieceType2OnDiagonal === null || pieceTeam2OnDiagonal != team))
-                this.safeAddPos(board, piecePos2OnDiagonal, useableCells)
+            if (!someting1OnDiagonal && (pieceType1OnDiagonal === null || pieceTeam1OnDiagonal != team || (pieceType1OnDiagonal != null && friendlyFire)))
+                safeAddPos(board, piecePos1OnDiagonal, useableCells)
+            if (!someting2OnDiagonal && (pieceType2OnDiagonal === null || pieceTeam2OnDiagonal != team || (pieceType2OnDiagonal != null && friendlyFire)))
+                safeAddPos(board, piecePos2OnDiagonal, useableCells)
 
             if (pieceType1OnDiagonal != null)
                 someting1OnDiagonal = true;
             if (pieceType2OnDiagonal != null)
                 someting2OnDiagonal = true;
+        };
+        for (let row = pieceRow - 1; row >= 0; row--) {
+            check(row);
         }
         space = 1;
         someting1OnDiagonal = false;
         someting2OnDiagonal = false;
         for (let row = pieceRow + 1; row < 8; row++) {
-            const [pieceType1OnDiagonal, pieceTeam1OnDiagonal, piecePos1OnDiagonal] = this.safeGetPieceInRowAt(board, row, piecePositionInRow - space);
-            const [pieceType2OnDiagonal, pieceTeam2OnDiagonal, piecePos2OnDiagonal] = this.safeGetPieceInRowAt(board, row, piecePositionInRow + (space++));
-            
-            if (!someting1OnDiagonal && (pieceType1OnDiagonal === null || pieceTeam1OnDiagonal != team))
-                this.safeAddPos(board, piecePos1OnDiagonal, useableCells)
-            if (!someting2OnDiagonal && (pieceType2OnDiagonal === null || pieceTeam2OnDiagonal != team))
-                this.safeAddPos(board, piecePos2OnDiagonal, useableCells)
-
-            if (pieceType1OnDiagonal != null)
-                someting1OnDiagonal = true;
-            if (pieceType2OnDiagonal != null)
-                someting2OnDiagonal = true;
+            check(row);
         }
         return useableCells;
     },
@@ -209,10 +203,10 @@ export default {
         return cells;
     },
 
-    getUseableCellsAround: function(board, piecePosition, team) {
+    getUseableCellsAround: function(board, piecePosition, team, friendlyFire) {
         return this.getCellsAround(piecePosition).filter(pos => {
             const [pieceType, pieceTeam] = this.safeGetPieceAt(board, pos)
-            return pieceType === null || pieceTeam != team;
+            return pieceType === null || pieceTeam != team || (pieceType != null && friendlyFire);
         });
     },
 

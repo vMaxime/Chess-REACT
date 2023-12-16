@@ -20,15 +20,22 @@ function Board() {
 
     if (selectedPieceTeam != null && selectedPieceTeam != enemyTeam) {
         let useableCells = chess.getUseableCells(board, selectedPiece, currentTeam);
-        if (selectedPieceType === chess.PieceType.KING) {
-            const tempBoard = [...board];
-            tempBoard[selectedPiece] = [null, null]; // avoid diagonal checks blocking
-            // TODO : remove pieces mating king
-            for (const piecePos of Object.keys(chess.getCellsByTeam(board, enemyTeam))) {
-                const tempBoardUseableCells = chess.getUseableCells(tempBoard, parseInt(piecePos), enemyTeam);
+        let enemyUseableCells = [];
+        for (const piecePos of Object.keys(chess.getCellsByTeam(board, enemyTeam))) {
+            enemyUseableCells = [...enemyUseableCells, ...chess.getUseableCells(board, parseInt(piecePos), enemyTeam)];
+            if (selectedPieceType === chess.PieceType.KING) {
+                const tempBoard = [...board];
+                tempBoard[selectedPiece] = [null, null]; // avoid diagonal checks blocking
+                const tempBoardUseableCells = chess.getUseableCells(tempBoard, parseInt(piecePos), enemyTeam, true);
                 useableCells = useableCells.filter(cell => !tempBoardUseableCells.includes(cell));
             }
         }
+        const kingPosition = chess.getKingPosition(board, currentTeam);
+        console.log(kingPosition)
+        if (enemyUseableCells.includes(kingPosition)) {
+            alert('roi attaqué :(')
+        }
+
         cellsCanMove = useableCells.filter(cell => board[cell][0] === null);
         cellsCanEat = useableCells.filter(cell => board[cell][1] != null && board[cell][1] != selectedPieceTeam);
     }

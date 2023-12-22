@@ -72,6 +72,7 @@ function Board() {
         const alivePieces = chess.getAlivePieces(board, currentTeam);
         const enemyAlivePieces = chess.getAlivePieces(board, enemyTeam);
         if (kingAttacked && !useableCells.length) {
+            // checkmate for enemy
             setWinner(enemyTeam);
         } else if (
             // lack of equipment

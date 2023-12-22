@@ -4,7 +4,7 @@ import Modal from "./Modal";
 import { useEffect, useRef, useState } from "react";
 
 function Board() {
-    const [boards, setBoards] = useState([chess.getLackOfEquipmentBoard()]);
+    const [boards, setBoards] = useState([chess.getDefaultBoard()]);
     const [currentBoard, setCurrentBoard] = useState(0);
     const [selectedPiece, setSelectedPiece] = useState(null);
     const [winner, setWinner] = useState(null);

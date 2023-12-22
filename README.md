@@ -8,10 +8,10 @@ Currently, two official plugins are available:
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
 Template (figma)<br />
-[https://www.figma.com/file/F3yULcdk7iMJFlvhUbSs4y/Pok%C3%A9dex-(Community)?type=design&node-id=0-1&mode=design&t=xUeIaTL5u6OZTYGn-0](https://www.figma.com/file/qZaAKHuDU3PcCMAb3lI0mu/Chess-Simple-Assets-(Community)?type=design&node-id=102-270&mode=design)
+https://www.figma.com/file/qZaAKHuDU3PcCMAb3lI0mu/Chess-Simple-Assets-(Community)?type=design&node-id=102-270&mode=design
 
 Preview (netlify)<br />
----<br />
+https://glittery-rolypoly-ae3f0d.netlify.app/<br />
 <br />
 (In development) Chess made to learn more React and to improve my logic.<br />
 100% Responsive.<br />

@@ -1,7 +1,7 @@
 .board {
     display: flex;
     flex-flow: row wrap;
-    width: 607px;
+    max-width: 300px;
     position: relative;
 }
 
@@ -10,57 +10,132 @@
 }
 
 .cell {
-    height: 72px;
-    width: 72px;
+    height: 36px;
+    width: 36px;
     box-sizing: border-box;
     position: relative;
-}
 
-.cell.black {
-    background-color: var(--cell-black);
-}
-
-.cell.white {
-    background-color: var(--cell-white);
-}
-
-.cell.active, .cell.hover {
-    background-color: var(--active-light) !important;
-}
-
-.cell.canEat::before {
-    content: '';
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 64px;
-    width: 64px;
-    border-radius: 50%;
-    border: 4px solid var(--active-light);
-}
-
-.cell.canMove::before {
-    content: '';
-    display: block;
-    position: absolute;
-    top: 21px;
-    left: 21px;
-    height: 32px;
-    width: 32px;
-    border-radius: 50%;
-    background-color: var(--active-light);
+    &.black {
+        background-color: var(--cell-black);
+    }
+    &.white {
+        background-color: var(--cell-white);
+    }
+    &.active, &.hover {
+        background-color: var(--active-light) !important;
+    }
+    &.canEat::before {
+        content: '';
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 28px;
+        width: 28px;
+        border-radius: 50%;
+        border: 4px solid var(--active-light);
+    }
+    &.canMove::before {
+        content: '';
+        display: block;
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        height: 16px;
+        width: 16px;
+        border-radius: 50%;
+        background-color: var(--active-light);
+    }
 }
 
 .piece {
-    width: 72px;
-    height: 72px;
+    width: 36px;
+    height: 36px;
     display: flex;
     justify-content: center;
     align-items: center;
+    > img {
+        height: 80%;
+        width: 80%;
+    }
 }
 
-.piece>img {
-    height: 80%;
-    width: 80%;
+.modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(36px * 8);
+    height: calc(36px * 8);
+    background-color: #58585817;
+    .modalContent {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        animation: show .2s linear;
+        height: 72px;
+        width: 144px;
+        background-color: var(--active);
+        color: #FFF;
+        font-weight: bold;
+        font-family: "Montserrat", sans-serif;
+        font-size: 14px;
+        border-radius: 8px;
+    }
+    .closeModal {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 8px;
+        font-size: 6px;
+        &:hover {
+            cursor: pointer;
+        }
+    }
+}
+
+@keyframes show {
+    0% {
+      transform: translateY(-15px);
+    }
+    100% {
+      transform: translateY(0);
+    }
+}
+
+.displayNone {
+    display: none;
+}
+
+@media screen and (min-width: 576px) {
+    .board {
+        max-width: 556px;
+    }
+    .cell, .piece {
+        height: 69.5px;
+        width: 69.5px;
+    }
+    .cell.canEat::before {
+        height: 64px;
+        width: 64px;
+    }
+    .cell.canMove::before {
+        top: 21px;
+        left: 21px;
+        height: 32px;
+        width: 32px;
+    }
+    .modal {
+        width: calc(69.5px * 8);
+        height: calc(69.5px * 8);
+        .modalContent {
+            font-size: 16px;
+        }
+        .closeModal {
+            font-size: 8px;
+        }
+    }
 }

@@ -4,3 +4,12 @@
     --active: #7B61FF;
     --active-light: rgba(123, 97, 255, 0.5);
 }
+
+body {
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

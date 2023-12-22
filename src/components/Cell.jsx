@@ -1,6 +1,6 @@
 import Piece from './Piece';
 
-function Cell({ index, piece, canEat, canMove, selectedPiece, setSelectedPiece, moveSelectedPiece }) {
+function Cell({ index, piece, canEat, canMove, active, setSelectedPiece, moveSelectedPiece }) {
 
     const handleClick = e => {
         if (canEat || canMove)
@@ -13,7 +13,7 @@ function Cell({ index, piece, canEat, canMove, selectedPiece, setSelectedPiece, 
     const cellType =  rowOfCell % 2 ? (index % 2 ? 'white' : 'black') : (index % 2 ? 'black' : 'white');
 
     return (
-        <div className={'cell ' + cellType + (selectedPiece === index ? ' active' : '') + (canEat ? ' canEat' : (canMove ? ' canMove' : ''))} onClick={handleClick}>
+        <div className={'cell ' + cellType + (active ? ' active' : '') + (canEat ? ' canEat' : (canMove ? ' canMove' : ''))} onClick={handleClick}>
             {
                 piece != null ?
                 <Piece type={piece.type} team={piece.team} />

@@ -22,14 +22,34 @@ export default {
         [this.PieceType.ROOK, 1], [this.PieceType.KNIGHT, 1], [this.PieceType.BISHOP, 1], [this.PieceType.QUEEN, 1], [this.PieceType.KING, 1], [this.PieceType.BISHOP, 1], [this.PieceType.KNIGHT, 1], [this.PieceType.ROOK, 1],
     ]},
 
-    safeGetPieceAt: (board, pos) => (pos < 0 || pos >= board.length ? [null, null] : board[pos]),
-    safeGetPieceInRowAt: (board, row, index) => (row < 0 || row > 7 || index < 0 || index > 7 ? [null, null, null] : [...board[row*8+index], row*8+index]),
+    // white can pat in one move
+    getPatBoard: function() { return [
+        [this.PieceType.KING, 1],
+        ...Array(5*8+11).fill([null, null]),
+        [this.PieceType.QUEEN, 1],
+        ...Array(10).fill([null, null]),
+        [this.PieceType.KING, 0],
+    ]},
+
+    // white can lack of equipment in one move
+    getLackOfEquipmentBoard: function() { return [
+        [this.PieceType.KING, 1], [this.PieceType.PAWN, 0],
+        ...Array(61).fill([null, null]),
+        [this.PieceType.KING, 0],
+    ]},
+
+    safeGetPieceAt: (board, pos) => (
+        pos < 0 || pos >= board.length ? [null, null] : board[pos]
+    ),
+    safeGetPieceInRowAt: (board, row, index) => (
+        row < 0 || row > 7 || index < 0 || index > 7 ? [null, null, null] : [...board[row*8+index], row*8+index]
+    ),
     safeAddPos: (board, pos, array) => {
-        if (pos > 0 && pos < board.length)
+        if (pos >= 0 && pos < board.length)
             array.push(pos);
     },
 
-    getUseableCells: function (board, piecePosition, currentTeam, friendlyFire=false) {
+    getUseableCells: function (board, piecePosition, currentTeam) {
         const useableCells = [];
         const [pieceType, team] = board[piecePosition];
         if (!pieceType)
@@ -53,22 +73,30 @@ export default {
                     const [pieceTypeAtRight1, pieceTeamAtRight1, piecePosAtRight1] = this.safeGetPieceInRowAt(board, row1, piecePositionInRow + 2);
                     const [pieceTypeAtRight2, pieceTeamAtRight2, piecePosAtRight2] = this.safeGetPieceInRowAt(board, row2, piecePositionInRow + 1);
 
-                    if (pieceTypeAtLeft1 === null || pieceTeamAtLeft1 != team || (pieceTypeAtLeft1 != null && friendlyFire))
+                    if (piecePosAtLeft1 != null && (pieceTypeAtLeft1 === null || pieceTeamAtLeft1 != null))
                         this.safeAddPos(board, piecePosAtLeft1, useableCells);
-                    if (pieceTypeAtLeft2 === null || pieceTeamAtLeft2 != team || (pieceTypeAtLeft2 != null && friendlyFire))
+                    if (piecePosAtLeft2 != null && (pieceTypeAtLeft2 === null || pieceTeamAtLeft2 != team))
                         this.safeAddPos(board, piecePosAtLeft2, useableCells);
-                    if (pieceTypeAtRight1 === null || pieceTeamAtRight1 != team || (pieceTypeAtRight1 != null && friendlyFire))
+                    if (piecePosAtRight1 != null && (pieceTypeAtRight1 === null || pieceTeamAtRight1 != team))
                         this.safeAddPos(board, piecePosAtRight1, useableCells);
-                    if (pieceTypeAtRight2 === null || pieceTeamAtRight2 != team || (pieceTypeAtRight2 != null && friendlyFire))
+                    if (piecePosAtRight2 != null && (pieceTypeAtRight2 === null || pieceTeamAtRight2 != team))
                         this.safeAddPos(board, piecePosAtRight2, useableCells);
                 }
                 break;
             case this.PieceType.PAWN:
-                const frontPos = isWhite ? piecePosition - 8 : piecePosition + 8;
+                let frontPos = isWhite ? piecePosition - 8 : piecePosition + 8;
                 const [pieceTypeAtFrontPos, pieceTeamAtFrontPos] = this.safeGetPieceAt(board, frontPos);
                 
                 if (pieceTypeAtFrontPos === null)
-                    this.safeAddPos(board, frontPos, useableCells, useableCells);
+                    this.safeAddPos(board, frontPos, useableCells);
+
+                if (this.canPawnMakeTwoSteps(piecePosition, currentTeam)) {
+                    frontPos = isWhite ? frontPos - 8 : frontPos + 8;
+                    const [pieceTypeAtFrontPos2, pieceTeamAtFrontPos2] = this.safeGetPieceAt(board, frontPos);
+                    if (pieceTypeAtFrontPos2 === null)
+                        this.safeAddPos(board, frontPos, useableCells);
+
+                }
 
                 const topLeftPos = isWhite ? piecePosition - 7 : piecePosition + 7;
                 const topRightPos = isWhite ? piecePosition - 9 : piecePosition + 9;
@@ -76,9 +104,9 @@ export default {
                 const [pieceTypeAtTopLeftPos, pieceTeamAtTopLeftPos] = this.safeGetPieceAt(board, topLeftPos);
                 const [pieceTypeAtTopRightPos, pieceTeamAtTopRightPos] = this.safeGetPieceAt(board, topRightPos);
 
-                if (pieceTypeAtTopLeftPos != null && (pieceTeamAtTopLeftPos != team || friendlyFire))
+                if (pieceTypeAtTopLeftPos != null && pieceTeamAtTopLeftPos != team)
                     this.safeAddPos(board, topLeftPos, useableCells);
-                if (pieceTypeAtTopRightPos != null && (pieceTeamAtTopRightPos != team || friendlyFire))
+                if (pieceTypeAtTopRightPos != null && pieceTeamAtTopRightPos != team)
                     this.safeAddPos(board, topRightPos, useableCells);
                 break;
             case this.PieceType.ROOK:
@@ -86,18 +114,20 @@ export default {
             case this.PieceType.KING:
             case this.PieceType.BISHOP:
                 if (pieceType === this.PieceType.KING || pieceType === this.PieceType.QUEEN)
-                    for (const cell of this.getUseableCellsAround(board, piecePosition, team, friendlyFire))
+                    for (const cell of this.getUseableCellsAround(board, piecePosition, team))
                         useableCells.push(cell);
                 if (pieceType === this.PieceType.ROOK || pieceType === this.PieceType.QUEEN) {
                     // Add cell to useable cells array if it's avalaible and returns true if a piece is on the cell
                     const safeAddPos = this.safeAddPos;
                     const safeAddCellForRook = (row, pos) => {
                         const [pieceType2, pieceTeam2, piecePos2] = this.safeGetPieceInRowAt(board, row, pos);
+                        if (piecePos2 === null)
+                            throw new Error('Position \'' + pos + '\' on row \'' + row + '\' out of range.');
 
                         if (pieceType2 === null)
                             safeAddPos(board, piecePos2, useableCells);
                         else {
-                            if (pieceTeam2 != team || friendlyFire)
+                            if (pieceTeam2 != team)
                                 safeAddPos(board, piecePos2, useableCells);
                             return true;
                         }
@@ -125,14 +155,33 @@ export default {
                     }
                 }
                 if (pieceType === this.PieceType.QUEEN || pieceType === this.PieceType.BISHOP)
-                    for (const cell of this.getUseableDiagonalCells(board, pieceRow, piecePositionInRow, team, friendlyFire))
+                    for (const cell of this.getUseableDiagonalCells(board, pieceRow, piecePositionInRow, team))
                         useableCells.push(cell);
                 break;
             default:
                 break;
         }
-
         return useableCells;
+    },
+
+    canPawnMakeTwoSteps: function(pos, team) {
+        const row = Math.floor(pos / 8);
+        return (team === 0 && row === 1) || (team === 1 && row === 6);
+    },
+
+    getUseableCellsByTeam: function(board, team) {
+        let useableCells = [];
+        for (const pos of Object.keys(this.getCellsByTeam(board, team)))
+            useableCells = [...useableCells, ...this.getUseableCells(board, parseInt(pos), team)]
+        return useableCells;
+    },
+
+    getAlivePieces: (board, team) => {
+        let types = [];
+        for (let cell of board)
+            if (cell[1] === team)
+                types.push(cell[0]);
+        return types;
     },
 
     getCellsByTeam: (board, team=null) => {
@@ -140,7 +189,7 @@ export default {
         for (let pos = 0; pos < board.length; pos++) {
             const [pieceType, pieceTeam] = board[pos];
             if (pieceTeam === team)
-                cells[pos] = pieceType;
+                cells[parseInt(pos)] = pieceType;
         }
         return cells;
     }, 
@@ -149,11 +198,7 @@ export default {
         return board.findIndex(([type, currentTeam]) => type === this.PieceType.KING && currentTeam === team);
     },
 
-    isKingAttacked: function (board, team) {
-        const kingPos = this.getKingPosition(board, team);
-    },
-
-    getUseableDiagonalCells: function(board, pieceRow, piecePositionInRow, team, friendlyFire) {
+    getUseableDiagonalCells: function(board, pieceRow, piecePositionInRow, team) {
         const useableCells = [];
         let someting1OnDiagonal = false;
         let someting2OnDiagonal = false;
@@ -164,9 +209,9 @@ export default {
             const [pieceType1OnDiagonal, pieceTeam1OnDiagonal, piecePos1OnDiagonal] = safeGetPieceInRowAt(board, row, piecePositionInRow - space);
             const [pieceType2OnDiagonal, pieceTeam2OnDiagonal, piecePos2OnDiagonal] = safeGetPieceInRowAt(board, row, piecePositionInRow + (space++));
             
-            if (!someting1OnDiagonal && (pieceType1OnDiagonal === null || pieceTeam1OnDiagonal != team || (pieceType1OnDiagonal != null && friendlyFire)))
+            if (!someting1OnDiagonal && piecePos1OnDiagonal != null && (pieceType1OnDiagonal === null || pieceTeam1OnDiagonal != team))
                 safeAddPos(board, piecePos1OnDiagonal, useableCells)
-            if (!someting2OnDiagonal && (pieceType2OnDiagonal === null || pieceTeam2OnDiagonal != team || (pieceType2OnDiagonal != null && friendlyFire)))
+            if (!someting2OnDiagonal && piecePos2OnDiagonal != null && (pieceType2OnDiagonal === null || pieceTeam2OnDiagonal != team))
                 safeAddPos(board, piecePos2OnDiagonal, useableCells)
 
             if (pieceType1OnDiagonal != null)
@@ -203,17 +248,53 @@ export default {
         return cells;
     },
 
-    getUseableCellsAround: function(board, piecePosition, team, friendlyFire) {
+    getUseableCellsAround: function(board, piecePosition, team) {
         return this.getCellsAround(piecePosition).filter(pos => {
             const [pieceType, pieceTeam] = this.safeGetPieceAt(board, pos)
-            return pieceType === null || pieceTeam != team || (pieceType != null && friendlyFire);
+            return pieceType === null || pieceTeam != team;
         });
     },
 
-    getLastPiecePosition: function (boards, currentBoardIndex, piecePosition) {
-        // for (let i = currentBoardIndex - 1; i >= 0; i--) {
-        //     if (boards[i][])
-        // }
-        // return piecePosition;
+    getLastMove: function(boards, currentBoard) {
+        if (currentBoard === 0) return [null, null];
+        const board = boards[currentBoard];
+        const prevBoard = boards[currentBoard - 1];
+        let moves = [];
+        for (let pos = 0; pos < board.length; pos++) {
+            const [pieceType, pieceTeam] = board[pos];
+            const [pieceType2, pieceTeam2] = prevBoard[pos];
+            if (pieceType != pieceType2 || pieceTeam != pieceTeam2) {
+                moves.push(pos);
+            }
+        }
+        return moves;
+    },
+
+    // from GPT 3.5
+    lackOfEquipment: function (alivePieces, enemyAlivePieces) {
+        const hasSufficientMaterial = (pieces) => {
+            // Check if the player has enough material to force checkmate
+            // Add conditions based on Chess.com's specific rules
+            return pieces.length > 1 || pieces.includes(this.PieceType.ROOK) || pieces.includes(this.PieceType.QUEEN);
+        };
+        
+        // If either player has sufficient material, the game continues
+        if (hasSufficientMaterial(alivePieces) || hasSufficientMaterial(enemyAlivePieces)) {
+            return false;
+        }
+        
+        // If both players have only their king, the game is a draw
+        if (alivePieces.length === 1 && enemyAlivePieces.length === 1 &&
+            alivePieces.includes(this.PieceType.KING) && enemyAlivePieces.includes(this.PieceType.KING)) {
+            return true;
+        }
+        
+        // If both players have only their king and a knight, the game is a draw
+        if (alivePieces.length === 2 && enemyAlivePieces.length === 2 &&
+            alivePieces.includes(this.PieceType.KING) && alivePieces.includes(this.PieceType.KNIGHT) &&
+            enemyAlivePieces.includes(this.PieceType.KING) && enemyAlivePieces.includes(this.PieceType.KNIGHT)) {
+            return true;
+        }
+        return false;
     }
 }
